@@ -28,6 +28,7 @@ import {
   uuidToBytes32,
 } from "@/lib/escrow";
 import { formatUsdc } from "@/lib/payments";
+import { escrowFundKind } from "@/lib/escrow-fund-kind";
 import { markTaskEscrowFundedAction } from "@/app/tasks/actions";
 import {
   DEFAULT_LOCALE,
@@ -95,6 +96,7 @@ export function EscrowFundPanel({
       setError(t("escrow.fund.positiveAmount"));
       return;
     }
+    const fundKind = escrowFundKind(rewardMode, safeWinnerCount);
 
     try {
       setPhase("connecting");
@@ -140,12 +142,14 @@ export function EscrowFundPanel({
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
       }
 
-      // Fund the escrow.
+      // Fund the escrow with the kind that matches the release flow:
+      // single-winner raffles release through assignWorker/releaseEscrow,
+      // so they must fund as Single-kind escrows.
       setPhase("funding");
       const fundHash = await walletClient.writeContract({
         address: ESCROW_CONTRACT_ADDRESS as `0x${string}`,
         abi: ESCROW_FUND_ABI,
-        functionName: rewardMode === "raffle" ? "fundRaffleEscrow" : "fundEscrow",
+        functionName: fundKind === "raffle" ? "fundRaffleEscrow" : "fundEscrow",
         args: [taskKey, amount],
       });
       const receipt = await publicClient.waitForTransactionReceipt({
