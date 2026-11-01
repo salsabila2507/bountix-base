@@ -1,0 +1,31 @@
+-- =====================================================================
+-- Bountix: allow multi-winner escrow raffle tasks
+-- =====================================================================
+--
+-- Migration 20260606010000 lifted the winner-count restriction inside
+-- select_raffle_winners() so escrow_base raffle tasks can use
+-- BountixEscrowV1's multi-winner payout, and releaseRaffleEscrowAction()
+-- actively rejects raffle_winner_count <= 1 for escrow release. But the
+-- tasks_raffle_payment_method_ck constraint from 20260604000000 was never
+-- relaxed, so INSERT/UPDATE of a raffle + escrow_base task with
+-- raffle_winner_count > 1 still fails at the schema level:
+--
+--   "new row for relation "tasks" violates check constraint
+--    tasks_raffle_payment_method_ck"
+--
+-- The constraint's only job was to force raffle_winner_count = 1 while
+-- escrow payouts ran on BountixEscrowV0, which supports a single payout
+-- per escrow. V1 supports multi-winner raffle release, so the schema rule
+-- is obsolete. Drop it. The V0-vs-V1 distinction is enforced on the
+-- release path by requiring escrow_contract_address =
+-- ESCROW_V1_CONTRACT_ADDRESS (app/applications/actions.ts
+-- releaseRaffleEscrowAction), so legacy V0 rows cannot reach the V1
+-- multi-winner release flow.
+--
+-- Raffle tasks keep every other invariant via tasks_raffle_details_ck
+-- (positive reward, eligibility rules, end date) and
+-- tasks_raffle_winner_count_ck (1..50 winners).
+-- =====================================================================
+
+alter table public.tasks
+  drop constraint if exists tasks_raffle_payment_method_ck;
