@@ -15,6 +15,7 @@ import { createTranslator, formatDate } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import {
+  buildSocialLinks,
   PROFILE_LANGUAGE_LABEL,
   PROFILE_ROLE_LABEL,
   type Profile,
@@ -127,7 +128,7 @@ export default async function PublicProfilePage({ params }: RouteParams) {
     fetchProfileServices(profile),
     getViewerIsAuthed(),
   ]);
-  const social = profile.social_links;
+  const social = buildSocialLinks(profile.social_links);
   const displayName = profile.display_name ?? `@${profile.username}`;
 
   return (

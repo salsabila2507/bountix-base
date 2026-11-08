@@ -75,12 +75,23 @@ export function validateUrl(value: string): string | null {
   }
 }
 
-/** Strip empty strings and trim, return SocialLinks object. */
+const SOCIAL_PROFILE_URLS = {
+  x: "https://x.com/",
+  telegram: "https://t.me/",
+  github: "https://github.com/",
+} as const;
+
+/** Expand social handles and trim non-empty link values. */
 export function buildSocialLinks(input: SocialLinks): SocialLinks {
   const result: SocialLinks = {};
   for (const key of ["x", "telegram", "github", "website"] as const) {
     const v = input[key]?.trim();
-    if (v) result[key] = v;
+    if (v) {
+      result[key] =
+        key !== "website" && /^@?[A-Za-z0-9_-]+$/u.test(v)
+          ? `${SOCIAL_PROFILE_URLS[key]}${v.replace(/^@/u, "")}`
+          : v;
+    }
   }
   return result;
 }

@@ -23,6 +23,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { TASK_LIST_COLUMNS, isUuid, type DbTask } from "@/lib/tasks";
 import { escrowContractForTask } from "@/lib/escrow";
+import { buildSocialLinks } from "@/lib/profile";
 import {
   APPLICATION_COLUMNS,
   APPLICATION_STATUS_COLOR,
@@ -332,7 +333,7 @@ export default async function ApplicantsPage({ params }: RouteParams) {
           ) : (
             apps.map((app) => {
               const applicant = profilesByUser.get(app.applicant_id);
-              const socialLinks = applicant?.social_links ?? {};
+              const socialLinks = buildSocialLinks(applicant?.social_links ?? {});
               const publicLinks = [
                 ["X", socialLinks.x],
                 ["Telegram", socialLinks.telegram],
