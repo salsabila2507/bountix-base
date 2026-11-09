@@ -213,11 +213,17 @@ export async function restoreApplicationAction(applicationId: string) {
   const isOwner = task.creator_id === user.id;
   if (!isAdmin && !isOwner) return;
 
-  // Restore to "pending" so worker can submit work again
-  await supabase
+  // Restore to pending so the owner can accept/reject again.
+  // Submissions still require status='accepted' (guard_task_submissions).
+  const { error } = await supabase
     .from("task_applications")
     .update({ status: "pending" })
     .eq("id", applicationId);
+
+  if (error) {
+    console.error("restoreApplicationAction failed", error.message);
+    return;
+  }
 
   revalidatePath(`/dashboard/tasks/${app.task_id}/applicants`);
   revalidatePath(`/tasks/${app.task_id}`);
