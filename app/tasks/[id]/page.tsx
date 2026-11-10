@@ -373,9 +373,7 @@ export default async function TaskDetailPage({ params }: RouteParams) {
                       <EscrowFundPanel
                         taskId={dbTask.id}
                         rewardAmount={dbTask.reward_amount ?? 0}
-                        rewardMode={
-                          dbTask.reward_mode === "raffle" ? "raffle" : "fixed"
-                        }
+                        rewardMode={dbTask.reward_mode}
                         winnerCount={dbTask.raffle_winner_count}
                         locale={locale}
                       />

@@ -22,6 +22,7 @@ import {
   ESCROW_CONTRACT_ADDRESS,
   ESCROW_FUND_ABI,
   ESCROW_USDC_ADDRESS,
+  ESCROW_V2_CONTRACT_ADDRESS,
   USDC_APPROVE_ABI,
   basescanTxUrl,
   usdcToUnits,
@@ -34,7 +35,7 @@ import {
   createTranslator,
   type Locale,
 } from "@/lib/i18n";
-import type { RewardMode } from "@/lib/tasks";
+import type { DbRewardMode } from "@/lib/tasks";
 
 type Phase =
   | "idle"
@@ -60,7 +61,7 @@ export function EscrowFundPanel({
 }: {
   taskId: string;
   rewardAmount: number;
-  rewardMode?: RewardMode;
+  rewardMode?: DbRewardMode;
   winnerCount?: number;
   locale?: Locale;
 }) {
@@ -121,12 +122,17 @@ export function EscrowFundPanel({
 
       const taskKey = uuidToBytes32(taskId);
 
+      const targetEscrowAddress =
+        rewardMode === "fcfs"
+          ? (ESCROW_V2_CONTRACT_ADDRESS as `0x${string}`)
+          : (ESCROW_CONTRACT_ADDRESS as `0x${string}`);
+
       // Approve only if the current allowance is insufficient.
       const allowance = (await publicClient.readContract({
         address: ESCROW_USDC_ADDRESS as `0x${string}`,
         abi: USDC_APPROVE_ABI,
         functionName: "allowance",
-        args: [account, ESCROW_CONTRACT_ADDRESS as `0x${string}`],
+        args: [account, targetEscrowAddress],
       })) as bigint;
 
       if (allowance < amount) {
@@ -135,7 +141,7 @@ export function EscrowFundPanel({
           address: ESCROW_USDC_ADDRESS as `0x${string}`,
           abi: USDC_APPROVE_ABI,
           functionName: "approve",
-          args: [ESCROW_CONTRACT_ADDRESS as `0x${string}`, amount],
+          args: [targetEscrowAddress, amount],
         });
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
       }
@@ -143,7 +149,7 @@ export function EscrowFundPanel({
       // Fund the escrow.
       setPhase("funding");
       const fundHash = await walletClient.writeContract({
-        address: ESCROW_CONTRACT_ADDRESS as `0x${string}`,
+        address: targetEscrowAddress,
         abi: ESCROW_FUND_ABI,
         functionName: rewardMode === "raffle" ? "fundRaffleEscrow" : "fundEscrow",
         args: [taskKey, amount],
