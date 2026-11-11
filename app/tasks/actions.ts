@@ -343,7 +343,9 @@ export async function updateTaskAction(
   // Load full task state for ownership + funding checks.
   const { data: existing } = await supabase
     .from("tasks")
-    .select("creator_id, payment_method, escrow_tx_hash, status")
+    .select(
+      "creator_id, payment_method, escrow_tx_hash, status, reward_amount, reward_mode, raffle_winner_count",
+    )
     .eq("id", taskId)
     .maybeSingle();
 
@@ -363,8 +365,10 @@ export async function updateTaskAction(
     ? "escrow_base"
     : data.payment_method;
 
-  // Lock status for escrow-funded tasks — on-chain state depends on it.
+  // Lock status and reward terms for escrow-funded tasks — on-chain state
+  // depends on them, and payout must match the amount already in escrow.
   const status = isFunded ? existing.status : data.status;
+  const reward = isFunded ? existing : data;
 
   const { error } = await supabase
     .from("tasks")
@@ -372,7 +376,7 @@ export async function updateTaskAction(
       title: data.title,
       description: data.description,
       category: data.category,
-      reward_amount: data.reward_amount,
+      reward_amount: reward.reward_amount,
       reward_currency: "USDC",
       chain: "base",
       status,
@@ -380,8 +384,8 @@ export async function updateTaskAction(
       external_link: data.external_link,
       start_date: data.start_date,
       end_date: data.end_date,
-      reward_mode: data.reward_mode,
-      raffle_winner_count: data.raffle_winner_count,
+      reward_mode: reward.reward_mode,
+      raffle_winner_count: reward.raffle_winner_count,
       eligibility_rules: data.eligibility_rules,
       access_level: data.access_level,
       payment_method,
