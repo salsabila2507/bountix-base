@@ -43,7 +43,16 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 
 export const REWARD_MODES = ["fixed", "raffle"] as const;
 export type RewardMode = (typeof REWARD_MODES)[number];
-export type DbRewardMode = RewardMode | "fcfs";
+export type DbRewardMode = RewardMode | "fcfs";  
+
+/**  
+* Resolve the reward mode to save when editing a task.  
+* The edit form only offers REWARD_MODES, so a stored mode the form  
+* cannot express (today "fcfs") must keep its stored mode when edited.  
+*/ 
+export function resolveEditedRewardMode(existing: DbRewardMode, posted: RewardMode): DbRewardMode {   
+    return (REWARD_MODES as readonly string[]).includes(existing) ? posted : existing; 
+}
 
 export const REWARD_MODE_LABEL: Record<RewardMode, string> = {
   fixed: "Fixed reward",
