@@ -78,6 +78,8 @@ export function TaskForm({
   const [rewardMode, setRewardMode] = useState<RewardMode>(
     def?.reward_mode === "raffle" ? "raffle" : "fixed",
   );
+  // The form has no FCFS option, so an FCFS task keeps its stored mode on save.
+  const isFcfs = def?.reward_mode === "fcfs";
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     def?.payment_method ?? "manual",
   );
@@ -199,6 +201,7 @@ export function TaskForm({
           <p className="mt-1 text-xs font-bold text-[#5a3b66]">
             {t("form.postTask.rewardModeHelp")}
           </p>
+          {isFcfs ? (<p className="mt-3 rounded-lg border-2 border-[#140625] bg-[#dff7e6] p-3 text-xs font-black leading-5 text-[#1f6b3a]">{t("form.postTask.fcfsKept")}) : null}</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {REWARD_MODES.map((modeValue, i) => (
               <label
@@ -215,6 +218,7 @@ export function TaskForm({
                       : i === 0
                   }
                   onChange={() => setRewardMode(modeValue)}
+                  disabled={isFcfs}
                   className="mt-1 h-4 w-4 accent-[#7c3cff]"
                 />
                 <span className="text-sm font-black text-[#140625]">
