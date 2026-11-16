@@ -12,11 +12,13 @@ import {
   isAdminTaskType,
   isUuid,
   shouldGateSoftOpenTask,
+  resolveEditedRewardMode,
   type TaskStatus,
   type TaskType,
   type TaskAccessLevel,
   type PaymentMethod,
   type RewardMode,
+  type DbRewardMode,
 } from "@/lib/tasks";
 import {
   ESCROW_CONTRACT_ADDRESS,
@@ -343,7 +345,7 @@ export async function updateTaskAction(
   // Load full task state for ownership + funding checks.
   const { data: existing } = await supabase
     .from("tasks")
-    .select("creator_id, payment_method, escrow_tx_hash, status")
+    .select("creator_id, payment_method, escrow_tx_hash, status, reward_mode")
     .eq("id", taskId)
     .maybeSingle();
 
@@ -365,6 +367,8 @@ export async function updateTaskAction(
 
   // Lock status for escrow-funded tasks — on-chain state depends on it.
   const status = isFunded ? existing.status : data.status;
+  // The edit form only offers fixed/raffle, so a stored mode it cannot express (today "fcfs") must survive unchanged.
+  const reward_mode = resolveEditedRewardMode(existing.reward_mode as DbRewardMode, data.reward_mode);
 
   const { error } = await supabase
     .from("tasks")
@@ -380,7 +384,7 @@ export async function updateTaskAction(
       external_link: data.external_link,
       start_date: data.start_date,
       end_date: data.end_date,
-      reward_mode: data.reward_mode,
+      reward_mode,
       raffle_winner_count: data.raffle_winner_count,
       eligibility_rules: data.eligibility_rules,
       access_level: data.access_level,
